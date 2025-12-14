@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { db } from "./firebase";
+import { db } from "../firebase";
 import { ref, onValue } from "firebase/database";
 import "./App.css";
 import { FaMapMarkerAlt, FaPhone, FaCode } from "react-icons/fa";
@@ -110,7 +110,7 @@ export default function App() {
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center px-5 gap-4 text-center md:text-right">
           <div className="flex flex-col items-center md:items-end gap-1">
             <div className="flex items-center gap-1"><FaMapMarkerAlt /> شارع الثورة مقابل تاج مول</div>
-            <div className="flex items-center gap-1"><FaPhone /> 059xxxxxxx</div>
+            <div className="flex items-center gap-1"><FaPhone /> 0595557888</div>
           </div>
 
           <div className="flex items-center gap-2 justify-center md:justify-start text-xs text-[#D4AF37]">

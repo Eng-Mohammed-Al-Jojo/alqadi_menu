@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { db } from "./firebase";
+import { db } from "../firebase";
 import { ref, onValue, push, set, remove } from "firebase/database";
 import { FiEdit, FiTrash2, FiLogOut, FiPlus } from "react-icons/fi";
 
