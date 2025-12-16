@@ -26,6 +26,9 @@ export default function Admin() {
   const [itemName, setItemName] = useState("");
   const [itemPrice, setItemPrice] = useState("");
 
+  /* ================= SEARCH ================= */
+  const [quickSearch, setQuickSearch] = useState("");
+
   /* ================= UI ================= */
   const [popup, setPopup] = useState<{ type: PopupType; id?: string }>({ type: null });
   const [editItemId, setEditItemId] = useState("");
@@ -37,8 +40,10 @@ export default function Admin() {
 
   useEffect(() => {
     if (!auth) return;
-    onValue(ref(db, "categories"), (snap) => setCategories(snap.val() || {}));
-    onValue(ref(db, "items"), (snap) => setItems(snap.val() || {}));
+    const catRef = ref(db, "categories");
+    const itemsRef = ref(db, "items");
+    onValue(catRef, (snap) => setCategories(snap.val() || {}));
+    onValue(itemsRef, (snap) => setItems(snap.val() || {}));
   }, [auth]);
 
   /* ================= AUTH FUNCTIONS ================= */
@@ -64,10 +69,16 @@ export default function Admin() {
   };
 
   const deleteCategory = async (id: string) => {
+    // حذف القسم
     await remove(ref(db, `categories/${id}`));
-    Object.keys(items).forEach((itemId) => {
-      if (items[itemId].categoryId === id) remove(ref(db, `items/${itemId}`));
-    });
+    // حذف المنتجات التابعة مباشرة من قاعدة البيانات
+    const itemsRef = ref(db, "items");
+    onValue(itemsRef, (snap) => {
+      const currentItems = snap.val() || {};
+      Object.keys(currentItems).forEach((itemId) => {
+        if (currentItems[itemId].categoryId === id) remove(ref(db, `items/${itemId}`));
+      });
+    }, { onlyOnce: true });
     setPopup({ type: null });
   };
 
@@ -76,13 +87,14 @@ export default function Admin() {
     if (!selectedCategory || !itemName || !itemPrice) return;
     await push(ref(db, "items"), {
       name: itemName,
-      price: itemPrice, // نص لإضافة أسعار متعددة
+      price: itemPrice,
       categoryId: selectedCategory,
       visible: true,
       createdAt: Date.now(),
     });
     setItemName("");
     setItemPrice("");
+    setSelectedCategory("");
   };
 
   const updateItem = async () => {
@@ -93,6 +105,10 @@ export default function Admin() {
       categoryId: selectedCategory,
     });
     setPopup({ type: null });
+    setEditItemId("");
+    setItemName("");
+    setItemPrice("");
+    setSelectedCategory("");
   };
 
   const deleteItem = async () => {
@@ -193,28 +209,45 @@ export default function Admin() {
             onChange={(e) => setItemPrice(e.target.value)}
           />
           
-         <div className="flex gap-2">
+          <div className="flex gap-2">
             <button
               onClick={addItem}
-              className="flex-4 py-2 rounded-xl font-bold bg-yellow-400 flex-grow"
+              className="flex-4 py-2 rounded-xl font-bold bg-yellow-400 grow"
             >
               إضافة المنتج
             </button>
-            {/* <button
-              onClick={() => { setItemName(""); setItemPrice(""); setSelectedCategory(""); }}
-              className="w-1/5 py-2 rounded-xl font-bold bg-gray-500 text-white"
-            >
-              مسح الحقول
-            </button> */}
           </div>
         </div>
+
+       
 
         {/* ITEMS LIST */}
         <div className="bg-white p-4 rounded-3xl border" style={{ borderColor: "#C9A24D" }}>
           <h2 className="font-bold mb-3">المنتجات</h2>
+          
+           {/* QUICK SEARCH */}
+        <input
+          className="w-full p-2 border rounded-xl mb-4 bg-white"
+          placeholder="ابحث بسرعة عن منتج أو قسم أو سعر..."
+          value={quickSearch}
+          onChange={(e) => setQuickSearch(e.target.value)}
+        />
+        
           {Object.keys(items).length === 0 && <p className="text-gray-400">لا يوجد منتجات</p>}
           <div className="space-y-2">
-            {Object.keys(items).map((id) => {
+            {Object.keys(items)
+              .filter(id => {
+                const item = items[id];
+                const prices = String(item.price).split(",").map(p => p.trim());
+                const categoryName = categories[item.categoryId]?.name || "";
+                const search = quickSearch.toLowerCase();
+                return (
+                  item.name.toLowerCase().includes(search) ||
+                  categoryName.toLowerCase().includes(search) ||
+                  prices.some(p => p.includes(search))
+                );
+              })
+              .map((id) => {
               const item = items[id];
               const prices = String(item.price).split(",").map(p => p.trim());
               return (
@@ -258,11 +291,10 @@ export default function Admin() {
             {popup.type === "addCategory" && (
               <>
                 <p className="mb-4 font-bold text-center">إضافة قسم</p>
-                
-               <div className="flex justify-center gap-4">
-                <button onClick={addCategory} className="bg-green-600 text-white px-4 py-2 rounded-xl w-full">حفظ</button>
-                <button onClick={() => setPopup({ type: null })} className="bg-red-500 text-white px-5 py-2 rounded-xl font-bold border">إلغاء</button>
-              </div>
+                <div className="flex justify-center gap-4">
+                  <button onClick={addCategory} className="bg-green-600 text-white px-4 py-2 rounded-xl w-full">حفظ</button>
+                  <button onClick={() => setPopup({ type: null })} className="bg-red-500 text-white px-5 py-2 rounded-xl font-bold border">إلغاء</button>
+                </div>
               </>
             )}
             {popup.type === "deleteCategory" && (
@@ -287,16 +319,14 @@ export default function Admin() {
                 <div className="flex justify-end gap-2">
                   <button onClick={updateItem} className="px-4 py-2 rounded-xl font-bold" style={{ backgroundColor: "#C9A24D", color: "#0F0F0F" }}>حفظ</button>
                   <button 
-                
-                onClick={() => {
-                  setPopup({ type: null });
-                  setItemName("");
-                  setItemPrice("");
-                  setSelectedCategory("");
-                }}
-                  
-                  
-                  className="px-4 py-2 rounded-xl border">إلغاء</button>
+                    onClick={() => {
+                      setPopup({ type: null });
+                      setItemName("");
+                      setItemPrice("");
+                      setSelectedCategory("");
+                      setEditItemId("");
+                    }}
+                    className="px-4 py-2 rounded-xl border">إلغاء</button>
                 </div>
               </>
             )}

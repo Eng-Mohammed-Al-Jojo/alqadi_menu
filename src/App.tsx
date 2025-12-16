@@ -72,7 +72,8 @@ export default function App() {
       {/* Menu */}
       <main className="flex-1 max-w-4xl mx-auto space-y-10 w-full px-6 py-6">
         {categories.map((category) => {
-          // ترتيب المنتجات حسب createdAt ضمن القسم
+         
+      // ترتيب المنتجات حسب createdAt ضمن القسم
           const categoryItems = items
             .filter((item) => item.categoryId === category.id)
             .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
@@ -97,7 +98,7 @@ export default function App() {
                     </tr>
                   </thead>
               <tbody>
-  {categoryItems.map((item) => (
+          {categoryItems.map((item) => (
                 <tr
                   key={item.id}
                   className={`border-b border-[#333] transition-all ${
@@ -124,7 +125,7 @@ export default function App() {
         })}
       </main>
 
-      {/* Footer */}
+    {/* Footer */}
       <footer
         className="text-gray-300 py-5 rounded-t-3xl text-sm font-bold"
         style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0), #111)" }}
